@@ -59,13 +59,13 @@ class GetBusinessUserView(GenericAPIView):
 
     def get(self, request, id):
 
-        address = self.get_object(id)
+        business_user = self.get_object(id)
 
-        if address is None: 
+        if business_user is None: 
 
             return get_response_schema({},  get_global_error_messages('NOT_FOUND'), status.HTTP_200_OK,)
 
-        serializer = BusinessUserSerializer(address)
+        serializer = BusinessUserSerializer(business_user)
 
         return get_response_schema(serializer.data, get_global_success_messages('RECORD_RETRIEVED') , status.HTTP_404_NOT_FOUND)
 
@@ -121,19 +121,6 @@ class CreateBusinessUserView(GenericAPIView):
 class LoginBusinessUser(GenericAPIView):    
 
     permission_classes = [AllowAny]
-
-    def get_object(self, email, request):
-        
-        user_queryset = BusinessUser.objects.filter(
-            email=email,
-
-        ).first()
-
-        if user_queryset:
-
-            return user_queryset
-        
-        return None
     
     @swagger_auto_schema(
         request_body=openapi.Schema(

@@ -32,18 +32,20 @@ def business_image_path(instance, filename):
 
 class UserManager(BaseUserManager):
 
-    def create_user(self, email, password, **extra_fields):
+    def create_user(self, email, password, business_name, **extra_fields):
 
-        user = self.model(email=email, password=password, **extra_fields)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
         user.save(using=self._db)
         return user
 
 
-    def create_superuser(self, email, password):
+    def create_superuser(self, email, password, business_name):
 
         user = self.create_user(
             email=email,
             password=password,
+            business_name=business_name,
         )
         user.is_superuser = True
         user.is_staff = True
@@ -73,9 +75,10 @@ class BusinessUser(AbstractBaseUser, PermissionsMixin):
         FOOD_DINING_TYPE = 'Food & Dining', _('Food & Dining')
 
     class RoleType(models.TextChoices):
-        SUPERADMIN = 'Superadmin', _('Superadmin')
+        SUPERADMIN = 'SuperAdmin', _('SuperAdmin')
         JOBSEEKER = 'Jobseeker', _('Jobseeker')
         RECRUITER = 'Recruiter', _('Recruiter')
+        BUSINESSUSER = 'BusinessUser', _('BusinessUser')
         ADVERTISER = 'Advertiser', _('Advertiser')
 
     business_location = models.ForeignKey(
@@ -95,7 +98,7 @@ class BusinessUser(AbstractBaseUser, PermissionsMixin):
     contact_number = models.CharField(validators=[MinLengthValidator(10)], max_length=10, null= True, blank= True)
     awards_name = models.TextField(max_length = 500, null= True, blank= True)
 
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
 
     is_superuser = models.BooleanField(default=False)
@@ -108,7 +111,7 @@ class BusinessUser(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
     
-    REQUIRED_FIELDS = ['business_name', ]
+    REQUIRED_FIELDS = ['business_name', 'business_category', 'business_user_role']
 
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)  

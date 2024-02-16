@@ -1,23 +1,12 @@
-from django.shortcuts import render, HttpResponse
 from rest_framework.generics import GenericAPIView
 from rest_framework import status
 from django.db import transaction
-from django.contrib.auth.hashers import check_password
 from django.contrib.auth import (
     login,
     logout,
     authenticate
 )
 from django.contrib.auth.tokens import default_token_generator
-from django.contrib.auth.models import User
-from django.core.mail import send_mail
-from django.urls import reverse
-from django.shortcuts import redirect
-from django.template.loader import render_to_string
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.contrib.sites.shortcuts import get_current_site
-from django.http import HttpResponseBadRequest
 from django.utils.http import urlsafe_base64_decode
 
 from business.models import (
@@ -45,7 +34,6 @@ from business.serializers import (
     CreateBusinessUserSerializer,
 )
 
-# Custom schema in swagger
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -158,7 +146,7 @@ class LoginBusinessUser(GenericAPIView):
     def post(self, request):
 
         email = request.data["email"]
-        
+
         password = request.data["password"]
 
         user = self.get_object(email, request)

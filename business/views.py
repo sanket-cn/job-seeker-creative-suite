@@ -6,7 +6,6 @@ from django.contrib.auth import (
     logout,
     authenticate
 )
-from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 
 from business.models import (
@@ -26,7 +25,8 @@ from oneheartmarket.utils import (
     get_response_schema,
     get_serializer_error_msg,
     get_tokens_for_user,
-    send_verification_email
+    send_verification_email,
+    custom_token_generator
 )
 
 from business.serializers import (
@@ -68,6 +68,7 @@ class GetBusinessUserView(GenericAPIView):
         serializer = BusinessUserSerializer(address)
 
         return get_response_schema(serializer.data, get_global_success_messages('RECORD_RETRIEVED') , status.HTTP_404_NOT_FOUND)
+
 
 class CreateBusinessUserView(GenericAPIView):
     
@@ -145,13 +146,13 @@ class LoginBusinessUser(GenericAPIView):
     )
     def post(self, request):
 
-        email = request.data["email"]
-
-        password = request.data["password"]
-
-        user = self.get_object(email, request)
-        
         data = request.data
+
+        email = data["email"]
+
+        password = data["password"]
+
+        user = authenticate(request=request, username=email, password=password)
 
         if user == None:
 
@@ -164,28 +165,20 @@ class LoginBusinessUser(GenericAPIView):
         if user.is_verified == False:
 
             return get_response_schema( get_global_error_messages('UNVERIFIED_ACCOUNT'), get_global_error_messages('BAD_REQUEST'), status.HTTP_400_BAD_REQUEST)
+
+        login(request, user)
         
-        user = authenticate(request=request, username=email, password=password)
+        refresh, access = get_tokens_for_user(user) 
 
-        if user:
+        data.pop('password', None)
 
-            login(request, user)
-            
-            refresh, access = get_tokens_for_user(user) 
+        result = data
 
-            data.pop('password', None)
+        result["refresh"] = refresh
 
-            result = data
+        result["access"] = access
 
-            result["refresh"] = refresh
-
-            result["access"] = access
-
-            return get_response_schema(result, get_global_success_messages('LOGGED_IN'), status.HTTP_200_OK)
-        
-        else:
-
-            return get_response_schema({}, get_global_error_messages('UNAUTHORIZED'), status.HTTP_401_UNAUTHORIZED)
+        return get_response_schema(result, get_global_success_messages('LOGGED_IN'), status.HTTP_200_OK)
     
 
 class LogoutBusinessUser(GenericAPIView):
@@ -219,34 +212,39 @@ class LogoutBusinessUser(GenericAPIView):
 
 class VerifyEmailAPIView(GenericAPIView):
     
-    def post(self, request):
+    def get(self, request):
 
-        uidb64 = request.GET.get('uidb64')
-
-        token = request.GET.get('token')
-        
-        if not uidb64 or not token:
-
-            return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
-        
         try:
+            uidb64 = request.GET.get('uidb64')
 
-            uid = urlsafe_base64_decode(uidb64).decode()
+            token = request.GET.get('token')
+            
+            if not uidb64 or not token:
 
-            user = BusinessUser.objects.get(pk=uid)
+                return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
+            
+            try:
 
-        except (TypeError, ValueError, OverflowError, BusinessUser.DoesNotExist):
+                uid = urlsafe_base64_decode(uidb64).decode()
 
-            user = None
+                user = BusinessUser.objects.get(pk=uid)
 
-        if user is not None and default_token_generator.check_token(user, token):
+            except (TypeError, ValueError, OverflowError, BusinessUser.DoesNotExist):
 
-            user.is_verified = True
+                user = None
 
-            user.save()
+            if user is not None and custom_token_generator.check_token(user, token):
 
-            return get_response_schema({}, get_global_success_messages('VERIFIED_SUCCESSFULLY'), status.HTTP_200_OK)
-        
-        else:
+                user.is_verified = True
 
-            return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
+                user.save()
+
+                return get_response_schema({}, get_global_success_messages('VERIFIED_SUCCESSFULLY'), status.HTTP_200_OK)
+            
+            else:
+
+                return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            
+            print("E", e)

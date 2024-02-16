@@ -6,13 +6,19 @@ from rest_framework.views import exception_handler
 from rest_framework import status
 from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework.exceptions import NotAuthenticated
-from django.contrib.auth.tokens import default_token_generator
 from django.urls import reverse
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.conf import settings
+from django.utils.http import base36_to_int
+from datetime import datetime
+from django.conf import settings
+from django.utils.crypto import constant_time_compare
+from django.utils.http import base36_to_int
 
 
 def get_response_schema(schema, message, status_code):
@@ -77,6 +83,79 @@ def get_serializer_error_msg(error):
     return {settings.REST_FRAMEWORK["NON_FIELD_ERRORS_KEY"]: error}
 
 
+class CustomTokenGenerator(PasswordResetTokenGenerator):
+
+    def make_token(self, user, expiration=None):
+
+        if expiration is None:
+            expiration = self._num_seconds(self._now()) + settings.PASSWORD_RESET_TIMEOUT
+        else:
+            expiration = self._num_seconds(expiration)
+        return self._make_token_with_timestamp(
+            user,
+            expiration,
+            self.secret,
+        )
+
+    def check_token(self, user, token):
+
+        if not (user and token):
+            return False
+        
+        try:
+            ts_b36, _ = token.split("-")
+
+        except ValueError:
+            return False
+
+        try:
+
+            ts = base36_to_int(ts_b36)
+
+        except ValueError:
+            return False
+
+        for secret in [self.secret, *self.secret_fallbacks]:
+
+            if constant_time_compare(
+                self._make_token_with_timestamp(user, ts, secret),
+                token,
+            ):
+                break
+        else:
+            return False
+
+        if (self._num_seconds(self._now()) - ts) > settings.PASSWORD_RESET_TIMEOUT:
+
+            return False
+
+        return True
+
+    def _make_hash_value(self, user, timestamp):
+
+        login_timestamp = (
+            ""
+            if user.last_login is None
+            else user.last_login.replace(microsecond=0, tzinfo=None)
+        )
+        email_field = user.get_email_field_name()
+
+        email = getattr(user, email_field, "") or ""
+
+        return f"{user.pk}{user.password}{login_timestamp}{timestamp}{email}"
+
+    def _num_seconds(self, dt):
+
+        return int((dt - datetime(2001, 1, 1)).total_seconds())
+
+    def _now(self):
+
+        return datetime.now()
+
+
+custom_token_generator = CustomTokenGenerator()
+
+
 def send_verification_email(request, user):
 
     try:
@@ -87,7 +166,7 @@ def send_verification_email(request, user):
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        token = default_token_generator.make_token(user)
+        token = custom_token_generator.make_token(user)
 
         verification_url = reverse('verify-email')
 

@@ -19,6 +19,7 @@ from datetime import datetime
 from django.conf import settings
 from django.utils.crypto import constant_time_compare
 from django.utils.http import base36_to_int
+from django.template.loader import render_to_string
 
 
 def get_response_schema(schema, message, status_code):
@@ -156,33 +157,21 @@ class CustomTokenGenerator(PasswordResetTokenGenerator):
 custom_token_generator = CustomTokenGenerator()
 
 
-def send_verification_email(request, user):
-
+def send_email_with_link(request, user, subject, email_message, url_name):
     try:
-
         current_site = get_current_site(request)
-
         domain = current_site.domain
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-
         token = custom_token_generator.make_token(user)
-
-        verification_url = reverse('verify-email')
-
+        
+        verification_url = reverse(url_name)
         verification_link = f"http://{domain}{verification_url}?uidb64={uid}&token={token}"
-
-        email_subject = "Verify Your Email"
-
-        email_message = (
-            f"<p>Hi {user.business_name},</p>"
-            "<p>Please verify your account by visiting the following link:</p>"
-            f"<p><a href='{verification_link}'>{verification_link}</a></p>"
-            "<p>Thank you!</p>"
-        )
-
+        
+        email_message = email_message.format(user=user.business_name, verification_link=verification_link)
+        
         email = EmailMultiAlternatives(
-            email_subject,
+            subject,
             strip_tags(email_message),
             settings.EMAIL_HOST_USER,
             [user.email],
@@ -192,8 +181,27 @@ def send_verification_email(request, user):
 
         email.send()
         
-        return "Verify mail sent successfully"
-    
+        return "Email sent successfully"
     except Exception as e:
+        print(f'Error occurred: {e}')
+        # You might want to handle the exception in a more appropriate way based on your application's needs.
 
-        print('➡ oneheartmarket/oneheartmarket/utils.py:108 e:', e)
+def send_verification_email(request, user):
+    subject = "Verify Your Email"
+    email_message = (
+        "<p>Hi {user},</p>"
+        "<p>Please verify your account by visiting the following link:</p>"
+        "<p><a href='{verification_link}'>{verification_link}</a></p>"
+        "<p>Thank you!</p>"
+    )
+    return send_email_with_link(request, user, subject, email_message, 'verify-email')
+
+def send_forgot_password_email_business_user(request, user):
+    subject = "Reset Your Password"
+    email_message = (
+        "<p>Hi {user},</p>"
+        "<p>Click bellow link to redirect on forgot password page.</p>"
+        "<p><a href='{verification_link}'>{verification_link}</a></p>"
+        "<p>Thank you!</p>"
+    )
+    return send_email_with_link(request, user, subject, email_message, 'forgot-password-business-user')

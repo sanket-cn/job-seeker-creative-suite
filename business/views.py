@@ -1,5 +1,6 @@
 from rest_framework.generics import GenericAPIView
 from rest_framework import status
+from django.shortcuts import render
 from django.db import transaction
 from django.contrib.auth import (
     login,
@@ -26,6 +27,7 @@ from oneheartmarket.utils import (
     get_serializer_error_msg,
     get_tokens_for_user,
     send_verification_email,
+    send_forgot_password_email_business_user,
     custom_token_generator
 )
 
@@ -235,3 +237,89 @@ class VerifyEmailAPIView(GenericAPIView):
         except Exception as e:
             
             print("E", e)
+
+
+class SendMailForgotPasswordBusinessUser(GenericAPIView):
+
+    permission_classes = [AllowAny]
+
+    def get_object(self, email):
+        
+        business_user = BusinessUser.objects.filter(
+            email=email
+        ).first()
+
+        if business_user is None:
+            return None
+        
+        return business_user
+    
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING),
+            }
+        )
+    )
+    def post(self, request):
+
+        data = request.data
+
+        email = data.get('email')  
+        
+        business_user = self.get_object(email) 
+        
+        if business_user is not None:
+
+            send_forgot_password_email_business_user(request, business_user)
+
+            return get_response_schema({}, get_global_success_messages('RECORD_CREATED'), status.HTTP_200_OK,)
+            
+        return get_response_schema({}, get_global_error_messages('NOT_FOUND'), status.HTTP_400_BAD_REQUEST)
+
+    
+
+
+class VerifyEmailForgotPasswordAPIView(GenericAPIView):
+    
+    def get(self, request):
+
+        try:
+            uidb64 = request.GET.get('uidb64')
+
+            token = request.GET.get('token')
+            
+            if not uidb64 or not token:
+
+                return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
+            
+            try:
+
+                uid = urlsafe_base64_decode(uidb64).decode()
+
+                user = BusinessUser.objects.get(pk=uid)
+
+            except (TypeError, ValueError, OverflowError, BusinessUser.DoesNotExist):
+
+                user = None
+
+            if user is not None and custom_token_generator.check_token(user, token):
+
+                return get_response_schema({}, get_global_success_messages('VERIFIED_SUCCESSFULLY'), status.HTTP_200_OK)
+            
+            else:
+
+                return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            
+            print("E", e)
+
+
+
+def password_forgot_request(request):
+    return render(request, "password_forgot_button.html")
+
+def forgot_password_business_user(request):
+    return render(request, "change_password.html")

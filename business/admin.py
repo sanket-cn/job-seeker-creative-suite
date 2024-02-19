@@ -8,7 +8,14 @@ from business.models import (
 
 
 class BusinessUserAdmin(admin.ModelAdmin):
+
     list_display = ["id", "business_name", "email", "business_user_role",]
+
+    list_filter = ('business_category', 'business_user_role', 'is_active', 'is_verified', 'is_superuser')
+
+    search_fields = ['business_name', 'email']
+
+    ordering = ['-created']
 
     def get_fieldsets(self, request, obj=None):
 

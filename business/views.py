@@ -48,9 +48,7 @@ class GetBusinessUserView(GenericAPIView):
     def get_object(self, id):
 
         business_user = BusinessUser.objects.filter(
-
             id=id, 
-
         ).first()
 
         if business_user is None:
@@ -74,6 +72,8 @@ class GetBusinessUserView(GenericAPIView):
 
 class CreateBusinessUserView(GenericAPIView):
     
+    permission_classes = [AllowAny]
+
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -280,7 +280,6 @@ class SendMailForgotPasswordBusinessUser(GenericAPIView):
 
     
 
-
 class VerifyEmailForgotPasswordAPIView(GenericAPIView):
     
     def get(self, request):
@@ -316,6 +315,43 @@ class VerifyEmailForgotPasswordAPIView(GenericAPIView):
             
             print("E", e)
 
+
+class ForgotPasswordBusinessUser(GenericAPIView):
+
+    permission_classes = [AllowAny]
+
+    def get_object(self, id):
+        
+        business_user = BusinessUser.objects.filter(
+            id=id
+        ).first()
+
+        if business_user is None:
+            return None
+        
+        return business_user
+    
+    def post(self, request):
+        
+        data = request.data
+
+        uidb64 = data["uidb64"]
+
+        new_password = data["new_password"]
+
+        uid = urlsafe_base64_decode(uidb64).decode()
+
+        business_user = self.get_object(uid) 
+
+        if business_user is not None:
+
+            business_user.set_password(new_password)
+
+            business_user.save()
+
+            return get_response_schema({}, get_global_success_messages('PASSWORD_UPDATED'), status.HTTP_200_OK,)
+            
+        return get_response_schema({}, get_global_error_messages('NOT_FOUND'), status.HTTP_400_BAD_REQUEST)
 
 
 def password_forgot_request(request):

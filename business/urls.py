@@ -9,6 +9,7 @@ from business.views import (
     VerifyEmailAPIView,
     SendMailForgotPasswordBusinessUser,
     VerifyEmailForgotPasswordAPIView,
+    ForgotPasswordBusinessUser,
     forgot_password_business_user,
     password_forgot_request
 )
@@ -21,10 +22,12 @@ urlpatterns = [
     path('login-business-user/', LoginBusinessUser.as_view(), name='login-business-user'),
     path('logout-business-user/', LogoutBusinessUser.as_view(), name='logout-business-user'),
     
-    path('verify-email/', VerifyEmailAPIView.as_view(), name='verify-email'),  # Use the new API view
+    path('verify-email/', VerifyEmailAPIView.as_view(), name='verify-email'), 
 
-    path('send-mail-forgotpassword-businessuser/', SendMailForgotPasswordBusinessUser.as_view(), name='send-mail-forgotpassword-businessuser'),  # Use the new API view
-    path('Verify-Email-Forgot-Password-businessuser/', VerifyEmailForgotPasswordAPIView.as_view(), name='Verify-Email-Forgot-Password-businessuser'),  # Use the new API view
+    path('send-mail-forgotpassword-businessuser/', SendMailForgotPasswordBusinessUser.as_view(), name='send-mail-forgotpassword-businessuser'),
+    path('Verify-Email-Forgot-Password-businessuser/', VerifyEmailForgotPasswordAPIView.as_view(), name='Verify-Email-Forgot-Password-businessuser'), 
+
+    path('Forgot-Password-businessuser/', ForgotPasswordBusinessUser.as_view(), name='Forgot-Password-businessuser'), 
 
     path('refreshtoken/', TokenRefreshView.as_view(), name='token_refresh'),
 

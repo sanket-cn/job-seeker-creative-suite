@@ -19,7 +19,6 @@ from datetime import datetime
 from django.conf import settings
 from django.utils.crypto import constant_time_compare
 from django.utils.http import base36_to_int
-from django.template.loader import render_to_string
 
 
 def get_response_schema(schema, message, status_code):
@@ -57,7 +56,8 @@ def get_global_success_messages(key):
         'RECORD_CREATED': 'The record was successfully created.',
         'LOGGED_OUT': "User logged out",
         'LOGGED_IN': 'Logged in successFully',
-        'VERIFIED_SUCCESSFULLY': 'User verified successfully'
+        'VERIFIED_SUCCESSFULLY': 'User verified successfully',
+        'PASSWORD_UPDATED': 'Password updated successfully.',
 
     }   
     return data.get(key)
@@ -68,7 +68,7 @@ def get_global_error_messages(key):
     data = {
 
         'BAD_REQUEST': 'Bad request.',
-        'NOT_FOUND': 'Resource not found.',
+        'NOT_FOUND': 'User not found.',
         'INVALID_TOKEN': 'Token is invalid or expired. Please try again.',
         'USER_NOT_ACTIVE': 'User is not active',
         'UNAUTHORIZED': 'Invalid credentials.',
@@ -184,7 +184,7 @@ def send_email_with_link(request, user, subject, email_message, url_name):
         return "Email sent successfully"
     except Exception as e:
         print(f'Error occurred: {e}')
-        # You might want to handle the exception in a more appropriate way based on your application's needs.
+
 
 def send_verification_email(request, user):
     subject = "Verify Your Email"

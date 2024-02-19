@@ -10,7 +10,8 @@ import uuid
 import os
 from django.contrib.auth.models import BaseUserManager
 from django_cleanup import cleanup
-
+from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 def logo_image_path(instance, filename):
 
@@ -160,3 +161,12 @@ class BusinessSocialMedia(models.Model):
 
     def __str__(self):
         return self.social_media_type
+
+class AuthToken(models.Model):
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    token = models.CharField(max_length=100, unique=True)
+    expiry_time = models.DateTimeField()
+
+    def is_valid(self):
+        return self.expiry_time > timezone.now()
+    

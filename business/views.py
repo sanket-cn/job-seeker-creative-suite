@@ -1,10 +1,20 @@
 from rest_framework.generics import GenericAPIView
 from rest_framework import status
-from django.shortcuts import render
+from django.shortcuts import render, HttpResponseRedirect
 from django.db import transaction
 from business.forms import SignUpForm
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView
+from django.shortcuts import (redirect,
+    get_object_or_404
+)
+from django.views import View
+from .models import AuthToken
+from django.contrib.auth import login
+from django.utils import timezone
+from django.contrib import messages
+from django.contrib.auth.views import LoginView
+from django.core.mail import send_mail
 
 from django.contrib.auth import (
     login,
@@ -32,7 +42,10 @@ from oneheartmarket.utils import (
     get_tokens_for_user,
     send_verification_email,
     send_forgot_password_email_business_user,
-    custom_token_generator
+    custom_token_generator,
+    generate_auth_token,
+    send_auth_token_email,
+    wrong_login_attempt,
 )
 
 from business.serializers import (
@@ -357,6 +370,60 @@ class ForgotPasswordBusinessUser(GenericAPIView):
         return get_response_schema({}, get_global_error_messages('NOT_FOUND'), status.HTTP_400_BAD_REQUEST)
 
 
+class SignUpView(CreateView):
+
+    form_class = SignUpForm
+
+    success_url = reverse_lazy('admin:login')
+
+    template_name = 'admin/signup.html'
+
+
+class CustomLoginView(LoginView):
+    def form_valid(self, form):
+        username = form.cleaned_data.get('username')
+        password = form.cleaned_data.get('password')
+        
+        user = authenticate(username=username, password=password)
+
+        base_url = self.request.scheme + '://' + self.request.get_host()
+
+        if user is not None:
+        
+            token = generate_auth_token()
+            expiry_time = timezone.now() + timezone.timedelta(minutes=1) 
+            AuthToken.objects.create(user=user, token=token, expiry_time=expiry_time)
+
+            send_auth_token_email(user, token, base_url)
+
+            return HttpResponseRedirect(reverse('custom_success_page'))
+        
+        user = BusinessUser.objects.filter(email=username).first()
+
+        return self.form_invalid(form)
+    
+    def form_invalid(self, form):
+        
+        username = form.cleaned_data.get('username')
+        user = BusinessUser.objects.filter(email=username).first()
+
+        if user:
+            wrong_login_attempt(user)
+
+        return super().form_invalid(form)
+
+
+class TokenLoginView(View):
+    def get(self, request, token):
+        auth_token = get_object_or_404(AuthToken, token=token)
+        if auth_token.is_valid():   
+            login(request, auth_token.user)
+            # auth_token.delete()
+            return redirect('admin:index')
+        messages.error(request, "Token expired")
+        return redirect('admin:login')
+    
+
 def password_forgot_request(request):
     return render(request, "password_forgot_button.html")
 
@@ -365,10 +432,5 @@ def forgot_password_business_user(request):
     return render(request, "change_password.html")
 
 
-class SignUpView(CreateView):
-
-    form_class = SignUpForm
-
-    success_url = reverse_lazy('admin:login')
-
-    template_name = 'admin/signup.html'
+def custom_success_page(request):
+    return render(request, "custom_success_page.html")

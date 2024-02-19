@@ -19,6 +19,8 @@ from datetime import datetime
 from django.conf import settings
 from django.utils.crypto import constant_time_compare
 from django.utils.http import base36_to_int
+import secrets
+from django.core.mail import send_mail
 
 
 def get_response_schema(schema, message, status_code):
@@ -205,3 +207,26 @@ def send_forgot_password_email_business_user(request, user):
         "<p>Thank you!</p>"
     )
     return send_email_with_link(request, user, subject, email_message, 'forgot-password-business-user')
+
+
+def generate_auth_token():
+    return secrets.token_urlsafe(32)
+
+
+def send_auth_token_email(user, token, base_url):
+
+    subject = 'Login Authentication Link'
+    message = f'Click the following link to log in: {base_url}/business-user/authenticate/{token}/'
+    from_email = 'yourmail@gmail.com'
+    recipient_list = [user.email]
+
+    send_mail(subject, message, from_email, recipient_list)
+
+def wrong_login_attempt(user):
+
+    subject = 'Wrong login attempt'
+    message = f'Wrong login attempt'
+    from_email = 'yourmail@gmail.com'
+    recipient_list = [user.email]
+
+    send_mail(subject, message, from_email, recipient_list)

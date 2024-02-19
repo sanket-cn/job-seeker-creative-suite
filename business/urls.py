@@ -12,7 +12,9 @@ from business.views import (
     ForgotPasswordBusinessUser,
     SignUpView,
     forgot_password_business_user,
-    password_forgot_request
+    password_forgot_request,
+    custom_success_page,
+    TokenLoginView,
 )
 
 urlpatterns = [
@@ -34,9 +36,13 @@ urlpatterns = [
 
 
     path('signup/', SignUpView.as_view(), name='signup'),
-    
+
+
+    path('authenticate/<str:token>/', TokenLoginView.as_view(), name='token_login'),
+
     #template
 
+    path('custom_success_page/', custom_success_page, name='custom_success_page'),
     path('request-forgot-password/', password_forgot_request, name='request-forgot-password'),
     path('forgot-password-business-user/', forgot_password_business_user, name='forgot-password-business-user'),
 

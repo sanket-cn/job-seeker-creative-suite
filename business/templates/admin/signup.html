@@ -1,0 +1,13 @@
+<!-- signup.html -->
+{% extends "admin/base.html" %}
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'admin/login.css' %}">
+
+{% block content %}
+    <h2>Sign Up</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="button signup-btn" style="padding:10px;">Create User</button>
+    </form>
+{% endblock %}

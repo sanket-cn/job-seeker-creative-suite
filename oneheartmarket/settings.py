@@ -79,7 +79,7 @@ ROOT_URLCONF = 'oneheartmarket.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [str(Path(__name__).resolve().parent) + '/business/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

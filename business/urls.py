@@ -10,6 +10,7 @@ from business.views import (
     SendMailForgotPasswordBusinessUser,
     VerifyEmailForgotPasswordAPIView,
     ForgotPasswordBusinessUser,
+    SignUpView,
     forgot_password_business_user,
     password_forgot_request
 )
@@ -31,6 +32,9 @@ urlpatterns = [
 
     path('refreshtoken/', TokenRefreshView.as_view(), name='token_refresh'),
 
+
+    path('signup/', SignUpView.as_view(), name='signup'),
+    
     #template
 
     path('request-forgot-password/', password_forgot_request, name='request-forgot-password'),

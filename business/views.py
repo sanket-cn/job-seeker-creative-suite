@@ -2,6 +2,10 @@ from rest_framework.generics import GenericAPIView
 from rest_framework import status
 from django.shortcuts import render
 from django.db import transaction
+from business.forms import SignUpForm
+from django.urls import reverse_lazy
+from django.views.generic import CreateView
+
 from django.contrib.auth import (
     login,
     logout,
@@ -278,7 +282,6 @@ class SendMailForgotPasswordBusinessUser(GenericAPIView):
             
         return get_response_schema({}, get_global_error_messages('NOT_FOUND'), status.HTTP_400_BAD_REQUEST)
 
-    
 
 class VerifyEmailForgotPasswordAPIView(GenericAPIView):
     
@@ -357,5 +360,15 @@ class ForgotPasswordBusinessUser(GenericAPIView):
 def password_forgot_request(request):
     return render(request, "password_forgot_button.html")
 
+
 def forgot_password_business_user(request):
     return render(request, "change_password.html")
+
+
+class SignUpView(CreateView):
+
+    form_class = SignUpForm
+
+    success_url = reverse_lazy('admin:login')
+
+    template_name = 'admin/signup.html'

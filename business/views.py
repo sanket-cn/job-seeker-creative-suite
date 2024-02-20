@@ -80,11 +80,11 @@ class GetBusinessUserView(GenericAPIView):
 
         if business_user is None: 
 
-            return get_response_schema({},  get_global_error_messages('NOT_FOUND'), status.HTTP_200_OK,)
+            return get_response_schema({},  get_global_error_messages('NOT_FOUND'), status.HTTP_404_NOT_FOUND,)
 
         serializer = BusinessUserSerializer(business_user)
 
-        return get_response_schema(serializer.data, get_global_success_messages('RECORD_RETRIEVED') , status.HTTP_404_NOT_FOUND)
+        return get_response_schema(serializer.data, get_global_success_messages('RECORD_RETRIEVED') , status.HTTP_200_OK)
 
 
 class CreateBusinessUserView(GenericAPIView):

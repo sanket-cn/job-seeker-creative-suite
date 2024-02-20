@@ -5,7 +5,8 @@ from django.db import transaction
 from business.forms import SignUpForm
 from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView
-from django.shortcuts import (redirect,
+from django.shortcuts import (
+    redirect,
     get_object_or_404
 )
 from django.views import View
@@ -14,7 +15,6 @@ from django.contrib.auth import login
 from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
-from django.core.mail import send_mail
 
 from django.contrib.auth import (
     login,
@@ -380,31 +380,44 @@ class SignUpView(CreateView):
 
 
 class CustomLoginView(LoginView):
-    def form_valid(self, form):
-        username = form.cleaned_data.get('username')
-        password = form.cleaned_data.get('password')
-        
-        user = authenticate(username=username, password=password)
 
-        base_url = self.request.scheme + '://' + self.request.get_host()
+    def form_valid(self, form):
+
+        email = form.cleaned_data.get('username')
+
+        password = form.cleaned_data.get('password')
+
+        user = authenticate(username=email, password=password)
 
         if user is not None:
+
+            if user.is_staff == True and user.is_superuser == True:
+
+                base_url = self.request.scheme + '://' + self.request.get_host()
+
+                token = generate_auth_token()
+
+                expiry_time = timezone.now() + timezone.timedelta(minutes=15) 
+
+                AuthToken.objects.create(user=user, token=token, expiry_time=expiry_time)
+
+                send_auth_token_email(user, token, base_url)
+
+                return HttpResponseRedirect(reverse('custom_success_page'))
         
-            token = generate_auth_token()
-            expiry_time = timezone.now() + timezone.timedelta(minutes=1) 
-            AuthToken.objects.create(user=user, token=token, expiry_time=expiry_time)
-
-            send_auth_token_email(user, token, base_url)
-
-            return HttpResponseRedirect(reverse('custom_success_page'))
+            messages.error(self.request, "You dont' have permission to access admin panel.")
+            
+            return redirect('admin:login')
         
-        user = BusinessUser.objects.filter(email=username).first()
-
+        messages.error(self.request, "Invalid username or password.")
+        
         return self.form_invalid(form)
+
     
     def form_invalid(self, form):
         
         username = form.cleaned_data.get('username')
+
         user = BusinessUser.objects.filter(email=username).first()
 
         if user:
@@ -414,13 +427,21 @@ class CustomLoginView(LoginView):
 
 
 class TokenLoginView(View):
+
     def get(self, request, token):
+
         auth_token = get_object_or_404(AuthToken, token=token)
+
         if auth_token.is_valid():   
+
             login(request, auth_token.user)
-            # auth_token.delete()
+
+            auth_token.delete()
+
             return redirect('admin:index')
+        
         messages.error(request, "Token expired")
+        
         return redirect('admin:login')
     
 

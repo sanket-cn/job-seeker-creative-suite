@@ -37,7 +37,6 @@ urlpatterns = [
 
     path('signup/', SignUpView.as_view(), name='signup'),
 
-
     path('authenticate/<str:token>/', TokenLoginView.as_view(), name='token_login'),
 
     #template

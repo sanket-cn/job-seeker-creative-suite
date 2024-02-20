@@ -189,23 +189,30 @@ def send_email_with_link(request, user, subject, email_message, url_name):
 
 
 def send_verification_email(request, user):
+
     subject = "Verify Your Email"
+
     email_message = (
         "<p>Hi {user},</p>"
         "<p>Please verify your account by visiting the following link:</p>"
         "<p><a href='{verification_link}'>{verification_link}</a></p>"
         "<p>Thank you!</p>"
     )
+
     return send_email_with_link(request, user, subject, email_message, 'verify-email')
 
+
 def send_forgot_password_email_business_user(request, user):
+
     subject = "Reset Your Password"
+
     email_message = (
         "<p>Hi {user},</p>"
         "<p>Click bellow link to redirect on forgot password page.</p>"
         "<p><a href='{verification_link}'>{verification_link}</a></p>"
         "<p>Thank you!</p>"
     )
+    
     return send_email_with_link(request, user, subject, email_message, 'forgot-password-business-user')
 
 

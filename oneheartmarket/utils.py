@@ -56,9 +56,9 @@ def get_global_success_messages(key):
 
         'RECORD_RETRIEVED': 'The record was successfully retrieved.',
         'RECORD_CREATED': 'The record was successfully created.',
-        'LOGGED_OUT': "User logged out",
-        'LOGGED_IN': 'Logged in successFully',
-        'VERIFIED_SUCCESSFULLY': 'User verified successfully',
+        'LOGGED_OUT': "User logged out.",
+        'LOGGED_IN': 'Logged in successfully.',
+        'VERIFIED_SUCCESSFULLY': 'User verified successfully.',
         'PASSWORD_UPDATED': 'Password updated successfully.',
 
     }   
@@ -72,11 +72,12 @@ def get_global_error_messages(key):
         'BAD_REQUEST': 'Bad request.',
         'NOT_FOUND': 'User not found.',
         'INVALID_TOKEN': 'Token is invalid or expired. Please try again.',
-        'USER_NOT_ACTIVE': 'User is not active',
+        'INVALID_REFRESH_TOKEN': 'Refresh token is invalid or expired. Please try again.',
+        'USER_NOT_ACTIVE': 'User is not active.',
         'UNAUTHORIZED': 'Invalid credentials.',
-        'UNVERIFIED_ACCOUNT': 'Account is un-verified',
-        'INVALID_LINK': 'Invalid verification link',
-
+        'UNVERIFIED_ACCOUNT': 'Account is un-verified.',
+        'INVALID_LINK': 'Invalid verification link.',
+        'FAIL_VERIFICATION_MAIL': 'Failed to send email. Please try again later.'
     }
     return data.get(key)
 
@@ -160,32 +161,29 @@ custom_token_generator = CustomTokenGenerator()
 
 
 def send_email_with_link(request, user, subject, email_message, url_name):
-    try:
-        current_site = get_current_site(request)
-        domain = current_site.domain
+    current_site = get_current_site(request)
+    domain = current_site.domain
 
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = custom_token_generator.make_token(user)
-        
-        verification_url = reverse(url_name)
-        verification_link = f"http://{domain}{verification_url}?uidb64={uid}&token={token}"
-        
-        email_message = email_message.format(user=user.business_name, verification_link=verification_link)
-        
-        email = EmailMultiAlternatives(
-            subject,
-            strip_tags(email_message),
-            settings.EMAIL_HOST_USER,
-            [user.email],
-        )
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = custom_token_generator.make_token(user)
+    
+    verification_url = reverse(url_name)
+    verification_link = f"http://{domain}{verification_url}?uidb64={uid}&token={token}"
+    
+    email_message = email_message.format(user=user.business_name, verification_link=verification_link)
+    
+    email = EmailMultiAlternatives(
+        subject,
+        strip_tags(email_message),
+        settings.EMAIL_HOST_USER,
+        [user.email],
+    )
 
-        email.attach_alternative(email_message, "text/html")
+    email.attach_alternative(email_message, "text/html")
 
-        email.send()
-        
-        return "Email sent successfully"
-    except Exception as e:
-        print(f'Error occurred: {e}')
+    email.send()
+    
+    return "Email sent successfully"
 
 
 def send_verification_email(request, user):

@@ -133,8 +133,6 @@ class CreateBusinessUserView(GenericAPIView):
                     send_verification_email(request, user)
 
                 except Exception as e:
-
-                    print(f'Failed to send verification email: {e}')
                     transaction.set_rollback(True)
 
                     return get_response_schema(get_global_error_messages('FAIL_VERIFICATION_MAIL'), get_global_error_messages('BAD_REQUEST'), status.HTTP_400_BAD_REQUEST)
@@ -229,41 +227,36 @@ class VerifyEmailAPIView(GenericAPIView):
     
     def get(self, request):
 
+        uidb64 = request.GET.get('uidb64')
+
+        token = request.GET.get('token')
+        
+        if not uidb64 or not token:
+
+            return get_response_schema(get_global_error_messages('INVALID_LINK') , get_global_error_messages('BAD_REQUEST'), status.HTTP_400_BAD_REQUEST)
+        
         try:
-            uidb64 = request.GET.get('uidb64')
 
-            token = request.GET.get('token')
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = BusinessUser.objects.filter(id=uid).first()
+
+        except (TypeError, ValueError, OverflowError, BusinessUser.DoesNotExist):
+
+            user = None
+
+        if user is not None and custom_token_generator.check_token(user, token):
+
+            user.is_verified = True
+
+            user.save()
+
+            return get_response_schema({}, get_global_success_messages('VERIFIED_SUCCESSFULLY'), status.HTTP_200_OK)
+        
+        else:
+
+            return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
+        
             
-            if not uidb64 or not token:
-
-                return get_response_schema(get_global_error_messages('INVALID_LINK') , get_global_error_messages('BAD_REQUEST'), status.HTTP_400_BAD_REQUEST)
-            
-            try:
-
-                uid = urlsafe_base64_decode(uidb64).decode()
-                user = BusinessUser.objects.filter(id=uid).first()
-
-            except (TypeError, ValueError, OverflowError, BusinessUser.DoesNotExist):
-
-                user = None
-
-            if user is not None and custom_token_generator.check_token(user, token):
-
-                user.is_verified = True
-
-                user.save()
-
-                return get_response_schema({}, get_global_success_messages('VERIFIED_SUCCESSFULLY'), status.HTTP_200_OK)
-            
-            else:
-
-                return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
-            
-        except Exception as e:
-            
-            print("E", e)
-
-
 class SendMailForgotPasswordBusinessUser(GenericAPIView):
 
     permission_classes = [AllowAny]
@@ -308,36 +301,33 @@ class VerifyEmailForgotPasswordAPIView(GenericAPIView):
     
     def get(self, request):
 
+        uidb64 = request.GET.get('uidb64')
+
+        token = request.GET.get('token')
+        
+        if not uidb64 or not token:
+
+            return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
+        
         try:
-            uidb64 = request.GET.get('uidb64')
 
-            token = request.GET.get('token')
+            uid = urlsafe_base64_decode(uidb64).decode()
+
+            user = BusinessUser.objects.filter(id=uid).first()
+
+        except (TypeError, ValueError, OverflowError, BusinessUser.DoesNotExist):
+
+            user = None
+
+        if user is not None and custom_token_generator.check_token(user, token):
+
+            return get_response_schema({}, get_global_success_messages('VERIFIED_SUCCESSFULLY'), status.HTTP_200_OK)
+        
+        else:
+
+            return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
             
-            if not uidb64 or not token:
-
-                return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
             
-            try:
-
-                uid = urlsafe_base64_decode(uidb64).decode()
-
-                user = BusinessUser.objects.filter(id=uid).first()
-
-            except (TypeError, ValueError, OverflowError, BusinessUser.DoesNotExist):
-
-                user = None
-
-            if user is not None and custom_token_generator.check_token(user, token):
-
-                return get_response_schema({}, get_global_success_messages('VERIFIED_SUCCESSFULLY'), status.HTTP_200_OK)
-            
-            else:
-
-                return get_response_schema({}, get_global_error_messages('INVALID_LINK'), status.HTTP_400_BAD_REQUEST)
-            
-        except Exception as e:
-            
-            print("E", e)
 
 
 class ForgotPasswordBusinessUser(GenericAPIView):

@@ -101,10 +101,10 @@ WSGI_APPLICATION = 'oneheartmarket.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.db.backends.mysql',
         'HOST': 'localhost',
         'NAME': os.getenv('DATABASE_NAME'),
-        'PORT': '5432',
+        'PORT': '3306',
         'USER': os.getenv('DATABASE_USER'),
         'PASSWORD': os.getenv('DATABASE_PASS'),
     }

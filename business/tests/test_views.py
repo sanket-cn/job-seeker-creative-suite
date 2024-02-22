@@ -179,7 +179,7 @@ class TestCreateBusinessUserView:
         response = self.client.post(reverse('create-business-user'), data=data_json, content_type='application/json')
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        
+
         assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
         assert response.data["results"] == get_global_error_messages("FAIL_VERIFICATION_MAIL")
 
@@ -331,11 +331,8 @@ class TestVerifyBusinessUserEmail:
             "uidb64": "",
             "token" : ""
         }
-        token = data["token"]
-        uidb64 = data["uidb64"]
 
-        url = f"http://127.0.0.1:8000/business-user/verify-email/?uidb64={uidb64}&token={token}"
-        response = self.client.get(url)
+        response = self.client.get(reverse('verify-email'), data=data)
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -381,12 +378,7 @@ class TestVerifyBusinessUserEmail:
             "token" : "c2qx74-257fabc9dcabd010a42abbfe70e8f44e"
         }
 
-        token = data["token"]
-        uidb64 = data["uidb64"]
-
-        url = f"http://127.0.0.1:8000/business-user/verify-email/?uidb64={uidb64}&token={token}"
-
-        response = self.client.get(url)
+        response = self.client.get(reverse('verify-email'), data=data)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -449,11 +441,8 @@ class TestVerifyEmailForgotPasswordAPIView:
             "uidb64": "",
             "token" : ""
         }
-        token = data["token"]
-        uidb64 = data["uidb64"]
 
-        url = f"http://127.0.0.1:8000/business-user/Verify-Email-Forgot-Password-businessuser/?uidb64={uidb64}&token={token}"
-        response = self.client.get(url)
+        response = self.client.get(reverse('Verify-Email-Forgot-Password-businessuser'), data)
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -472,8 +461,7 @@ class TestVerifyEmailForgotPasswordAPIView:
         token = data["token"]
         uidb64 = data["uidb64"]
 
-        url = f"http://127.0.0.1:8000/business-user/Verify-Email-Forgot-Password-businessuser/?uidb64={uidb64}&token={token}"
-        response = self.client.get(url)
+        response = self.client.get(reverse('Verify-Email-Forgot-Password-businessuser'), data)
 
         business_user_filter_mock = BusinessUser.objects.filter
         uid_decoded = urlsafe_base64_decode(uidb64).decode()
@@ -497,12 +485,7 @@ class TestVerifyEmailForgotPasswordAPIView:
             "token" : "c2qx74-257fabc9dcabd010a42abbfe70e8f44e"
         }
 
-        token = data["token"]
-        uidb64 = data["uidb64"]
-
-        url = f"http://127.0.0.1:8000/business-user/Verify-Email-Forgot-Password-businessuser/?uidb64={uidb64}&token={token}"
-
-        response = self.client.get(url)
+        response = self.client.get(reverse('Verify-Email-Forgot-Password-businessuser'), data)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -521,9 +504,7 @@ class TestVerifyEmailForgotPasswordAPIView:
         token = data["token"]
         uidb64 = data["uidb64"]
 
-        url = f"http://127.0.0.1:8000/business-user/Verify-Email-Forgot-Password-businessuser/?uidb64={uidb64}&token={token}"
-
-        response = self.client.get(url)
+        response = self.client.get(reverse('Verify-Email-Forgot-Password-businessuser'), data)
 
         business_user_filter_mock = BusinessUser.objects.filter
         uid_decoded = urlsafe_base64_decode(uidb64).decode()

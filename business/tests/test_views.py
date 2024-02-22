@@ -20,7 +20,8 @@ from business.views import (
 )
 from oneheartmarket.utils import  (
     custom_token_generator,
-    get_global_success_messages
+    get_global_success_messages,
+    get_global_error_messages,
 )
 
 
@@ -104,7 +105,7 @@ class TestCreateBusinessUserView:
 
         assert response.status_code == status.HTTP_201_CREATED
 
-        assert response.data["message"] == "The record was successfully created."
+        assert response.data["message"] == get_global_success_messages("RECORD_CREATED")
         assert response.data["results"]["business_name"] == business_user_request_data["business_name"]
         assert response.data["results"]["email"] == business_user_request_data["email"]
         assert response.data["results"]["business_category"] == business_user_request_data["business_category"]
@@ -124,7 +125,7 @@ class TestCreateBusinessUserView:
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-        assert response.data["message"] == "Bad request."
+        assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
 
 
     @pytest.mark.django_db
@@ -138,7 +139,7 @@ class TestCreateBusinessUserView:
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-        assert response.data["message"] == "Bad request."
+        assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
 
 
     @pytest.mark.django_db
@@ -152,7 +153,7 @@ class TestCreateBusinessUserView:
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-        assert response.data["message"] == "Bad request."
+        assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
 
 
     @pytest.mark.django_db
@@ -166,7 +167,7 @@ class TestCreateBusinessUserView:
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-        assert response.data["message"] == "Bad request."
+        assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
 
 
     # @pytest.mark.django_db
@@ -181,7 +182,7 @@ class TestCreateBusinessUserView:
 
     #     # Assert: Check that the response indicates failure to send email
     #     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    #     assert response.data["message"] == "Bad request."
+    #     assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
     #     assert response.data["results"] == "Failed to send email"
 
 
@@ -206,8 +207,8 @@ class TestBusinessUserLogin:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND 
 
-        assert response.data["message"] == "Bad request."
-        assert response.data["results"] == "User not found."
+        assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
+        assert response.data["results"] == get_global_error_messages("NOT_FOUND")
 
 
     @pytest.mark.django_db
@@ -221,8 +222,8 @@ class TestBusinessUserLogin:
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-        assert response.data["message"] == "Bad request."
-        assert response.data["results"] == "User is not active."
+        assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
+        assert response.data["results"] == get_global_error_messages("USER_NOT_ACTIVE")
 
 
     @pytest.mark.django_db
@@ -236,8 +237,8 @@ class TestBusinessUserLogin:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-        assert response.data["message"] == "Bad request."
-        assert response.data["results"] == "Account is un-verified."
+        assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
+        assert response.data["results"] == get_global_error_messages("UNVERIFIED_ACCOUNT")
 
 
     @pytest.mark.django_db
@@ -259,7 +260,7 @@ class TestBusinessUserLogin:
         response = self.client.post(reverse('login-business-user'), data=data_json,  content_type='application/json')
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["message"] == "Logged in successfully."
+        assert response.data["message"] == get_global_success_messages("LOGGED_IN")
         assert response.data["results"]["email"] == "testuser@yopmail.com"
         assert 'access' in response.data["results"]
         assert 'refresh' in response.data["results"]
@@ -285,8 +286,8 @@ class TestBusinessUserLogout:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST 
 
-        assert response.data["message"] == "Bad request."
-        assert response.data["results"] == "Refresh token is invalid or expired. Please try again."
+        assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
+        assert response.data["results"] == get_global_error_messages("INVALID_REFRESH_TOKEN")
 
 
     @pytest.mark.django_db
@@ -352,10 +353,12 @@ class TestVerifyBusinessUserEmail:
             "uidb64": "Nzk",
             "token" : "c2qx74-257fabc9dcabd010a42abbfe70e8f44e"
         }
+
         token = data["token"]
         uidb64 = data["uidb64"]
 
         url = reverse('verify-email')
+
         response = self.client.get(url, data=data)
 
         business_user_filter_mock = BusinessUser.objects.filter
@@ -379,10 +382,12 @@ class TestVerifyBusinessUserEmail:
             "uidb64": "Nzk",
             "token" : "c2qx74-257fabc9dcabd010a42abbfe70e8f44e"
         }
+
         token = data["token"]
         uidb64 = data["uidb64"]
 
         url = f"http://127.0.0.1:8000/business-user/verify-email/?uidb64={uidb64}&token={token}"
+
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -493,10 +498,12 @@ class TestVerifyEmailForgotPasswordAPIView:
             "uidb64": "Nzk",
             "token" : "c2qx74-257fabc9dcabd010a42abbfe70e8f44e"
         }
+
         token = data["token"]
         uidb64 = data["uidb64"]
 
         url = f"http://127.0.0.1:8000/business-user/Verify-Email-Forgot-Password-businessuser/?uidb64={uidb64}&token={token}"
+
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -512,10 +519,12 @@ class TestVerifyEmailForgotPasswordAPIView:
             "uidb64": "Nzk",
             "token" : "c2qx74-257fabc9dcabd010a42abbfe70e8f44e"
         }
+
         token = data["token"]
         uidb64 = data["uidb64"]
 
         url = f"http://127.0.0.1:8000/business-user/Verify-Email-Forgot-Password-businessuser/?uidb64={uidb64}&token={token}"
+        
         response = self.client.get(url)
 
         business_user_filter_mock = BusinessUser.objects.filter

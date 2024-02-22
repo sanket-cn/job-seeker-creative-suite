@@ -170,22 +170,20 @@ class TestCreateBusinessUserView:
         assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
 
 
-    # @pytest.mark.django_db
-    # @patch('oneheartmarket.utils.send_verification_email')
-    # def test_send_verification_email_failure(self, mock_send_verification_email, mocker, patch_auth_and_perm, business_user_request_data):
-    #     # Arrange: Mocking the send_verification_email function to raise an exception
-    #     mock_send_verification_email.side_effect = Exception('Failed to send email')
+    @pytest.mark.django_db
+    @patch('business.views.send_verification_email', side_effect=Exception('Failed to send verification email'))
+    def test_send_verification_email_failure(self, mock_send_verification_email, mocker, patch_auth_and_perm, business_user_request_data):
 
-    #     # Act: Make a request to create a business user
-    #     data_json = json.dumps(business_user_request_data)
-    #     response = self.client.post(reverse('create-business-user'), data=data_json, content_type='application/json')
+        data_json = json.dumps(business_user_request_data)
+        
+        response = self.client.post(reverse('create-business-user'), data=data_json, content_type='application/json')
+        
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        
+        assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
+        assert response.data["results"] == get_global_error_messages("FAIL_VERIFICATION_MAIL")
 
-    #     # Assert: Check that the response indicates failure to send email
-    #     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    #     assert response.data["message"] == get_global_error_messages("BAD_REQUEST")
-    #     assert response.data["results"] == "Failed to send email"
-
-
+        
 class TestBusinessUserLogin:
 
     @pytest.fixture(autouse=True)
@@ -524,7 +522,7 @@ class TestVerifyEmailForgotPasswordAPIView:
         uidb64 = data["uidb64"]
 
         url = f"http://127.0.0.1:8000/business-user/Verify-Email-Forgot-Password-businessuser/?uidb64={uidb64}&token={token}"
-        
+
         response = self.client.get(url)
 
         business_user_filter_mock = BusinessUser.objects.filter

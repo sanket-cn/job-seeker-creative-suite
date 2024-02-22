@@ -1,35 +1,31 @@
 import pytest
 from django.urls import reverse
 from rest_framework import status
+import requests_mock
+from unittest import mock
 from rest_framework.test import APIClient
 from mixer.backend.django import mixer
+from business.serializers import BusinessUserSerializer
+import json
+from decimal import Decimal
+from django.utils.http import urlsafe_base64_decode
+from unittest.mock import patch
 from business.models import (
     BusinessUser,
-    Location
 )
-from rest_framework.response import Response
-
-from business.serializers import BusinessUserSerializer
-from rest_framework import status
-import pytest
-import requests_mock
 from business.views import (
     GetBusinessUserView,
     LogoutBusinessUser,
-    CreateBusinessUserView,
     SendMailForgotPasswordBusinessUser,
 )
-import json
+from oneheartmarket.utils import  (
+    custom_token_generator,
+    get_global_success_messages
+)
+
+
 from faker import Faker
 faker = Faker()
-from decimal import Decimal
-from unittest.mock import patch
-from oneheartmarket.utils import send_verification_email, custom_token_generator, get_response_schema, get_global_success_messages
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_decode
-
-from unittest import mock
 
 @pytest.fixture
 def mock_api():
@@ -58,6 +54,7 @@ def business_user_request_data():
         }
     }
 
+
 class TestGetBusinessUserView:
 
     @pytest.fixture(autouse=True)
@@ -80,6 +77,7 @@ class TestGetBusinessUserView:
 
         assert response.data['results'] == expected_data
 
+
     @pytest.mark.django_db
     def test_get_nonexistent_business_user(self, mocker, patch_auth_and_perm):
 
@@ -95,6 +93,7 @@ class TestCreateBusinessUserView:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.client = APIClient()
+
 
     @pytest.mark.django_db
     def test_create_successful_business_user(self, mocker, patch_auth_and_perm, business_user_request_data):
@@ -192,6 +191,7 @@ class TestBusinessUserLogin:
     def setup(self):
         self.client = APIClient()
 
+
     @pytest.mark.django_db
     def test_login_invalid_credentials(self, mocker, patch_auth_and_perm):
 
@@ -271,6 +271,7 @@ class TestBusinessUserLogout:
     def setup(self):
         self.client = APIClient()
 
+
     @pytest.mark.django_db
     def test_login_invalid_credentials(self, mocker, patch_auth_and_perm):
 
@@ -287,16 +288,18 @@ class TestBusinessUserLogout:
         assert response.data["message"] == "Bad request."
         assert response.data["results"] == "Refresh token is invalid or expired. Please try again."
 
+
     @pytest.mark.django_db
     def test_logout_business_user_fail(self, mocker, patch_auth_and_perm):
 
         data = {
-            "refresh" : "asfasdfsf"
+            "refresh" : "wrong refresh token"
         }
 
         response = self.client.post(reverse('logout-business-user'),  data=data)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
 
     @pytest.mark.django_db
     def test_logout_business_user_success(self, mocker, patch_auth_and_perm):
@@ -319,6 +322,7 @@ class TestVerifyBusinessUserEmail:
     def setup(self):
         self.client = APIClient()
 
+
     @pytest.mark.django_db
     def test_empty_or_none_uid_and_token(self, mocker, patch_auth_and_perm):
 
@@ -335,6 +339,7 @@ class TestVerifyBusinessUserEmail:
         response = self.client.get(url)
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
 
     @pytest.mark.django_db
     def test_valid_uid_and_token(self, mocker):
@@ -362,6 +367,7 @@ class TestVerifyBusinessUserEmail:
         
         assert response.status_code == status.HTTP_200_OK
 
+
     @pytest.mark.django_db
     def test_in_valid_uid_and_token(self, mocker):
 
@@ -387,6 +393,7 @@ class TestSendMailForgotPasswordBusinessUser:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.client = APIClient()
+
 
     @pytest.mark.django_db
     @patch('business.views.send_forgot_password_email_business_user')
@@ -429,6 +436,7 @@ class TestVerifyEmailForgotPasswordAPIView:
     def setup(self):
         self.client = APIClient()
 
+
     @pytest.mark.django_db
     def test_empty_or_none_uid_and_token(self, mocker, patch_auth_and_perm):
 
@@ -445,6 +453,7 @@ class TestVerifyEmailForgotPasswordAPIView:
         response = self.client.get(url)
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
 
     @pytest.mark.django_db
     def test_valid_uid_and_token(self, mocker):
@@ -471,6 +480,7 @@ class TestVerifyEmailForgotPasswordAPIView:
         custom_token_generator_mock.assert_called_once_with(mock.ANY, token) 
         
         assert response.status_code == status.HTTP_200_OK
+
 
     @pytest.mark.django_db
     def test_in_valid_uid_and_token_forgot_password(self, mocker):
@@ -516,3 +526,60 @@ class TestVerifyEmailForgotPasswordAPIView:
         custom_token_generator_mock.assert_called_once_with(mock.ANY, token) 
         
         assert response.status_code == status.HTTP_200_OK
+
+
+class TestForgotPasswordBusinessUser:
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.client = APIClient()
+
+
+    @pytest.mark.django_db
+    @patch('business.views.ForgotPasswordBusinessUser.get_object')
+    def test_valid_password_reset(self, mocked_get_object):
+
+        json_data = {
+            "uidb64": "NGC",
+            "new_password": "valid_password"
+        }
+
+        response = self.client.post(reverse('Forgot-Password-businessuser'), data=json_data)
+
+        assert response.status_code == status.HTTP_200_OK
+
+
+    @pytest.mark.django_db
+    @patch('business.views.ForgotPasswordBusinessUser.get_object')
+    def test_empty_password_reset(self, mocked_get_object):
+        
+        json_data = {
+            "uidb64": "NGC",
+            "new_password": ""
+        }
+
+        response = self.client.post(reverse('Forgot-Password-businessuser'), data=json_data)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+    @pytest.mark.django_db
+    @patch('business.views.ForgotPasswordBusinessUser.get_object')
+    def test_invalid_uid_password_reset(self, mocked_get_object):
+
+        def get_object_side_effect(uid):
+            if uid is None or uid == "":
+                return None
+            else:
+                return mixer.blend(BusinessUser, id=2)
+            
+        mocked_get_object.side_effect = get_object_side_effect
+
+        json_data = {
+            "uidb64": "",
+            "new_password": "valid_password"
+        }
+
+        response = self.client.post(reverse('Forgot-Password-businessuser'), data=json_data)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

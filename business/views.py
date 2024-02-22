@@ -117,7 +117,6 @@ class CreateBusinessUserView(GenericAPIView):
         with transaction.atomic():
 
             data = request.data
-            print('➡ oneheartmarket/business/views.py:120 data:', data)
 
             data["business_user_role"] = BusinessUser.RoleType.BUSINESSUSER
 
@@ -138,7 +137,7 @@ class CreateBusinessUserView(GenericAPIView):
                     print(f'Failed to send verification email: {e}')
                     transaction.set_rollback(True)
 
-                    return get_response_schema( get_global_error_messages('FAIL_VERIFICATION_MAIL'), get_global_error_messages('BAD_REQUEST'), status.HTTP_400_BAD_REQUEST)
+                    return get_response_schema(get_global_error_messages('FAIL_VERIFICATION_MAIL'), get_global_error_messages('BAD_REQUEST'), status.HTTP_400_BAD_REQUEST)
 
                 return get_response_schema(serializer.data, get_global_success_messages('RECORD_CREATED'), status.HTTP_201_CREATED)
             
@@ -232,10 +231,8 @@ class VerifyEmailAPIView(GenericAPIView):
 
         try:
             uidb64 = request.GET.get('uidb64')
-            print('➡ oneheartmarket/business/views.py:235 uidb64:', uidb64)
 
             token = request.GET.get('token')
-            print('➡ oneheartmarket/business/views.py:238 token:', token)
             
             if not uidb64 or not token:
 
@@ -244,18 +241,12 @@ class VerifyEmailAPIView(GenericAPIView):
             try:
 
                 uid = urlsafe_base64_decode(uidb64).decode()
-                try:
-                    user = BusinessUser.objects.filter(id=uid).first()
-                except Exception as e:
-                    print("EEE ->>", e)
-                print("12")
-                print('➡ oneheartmarket/business/views.py:250 user PPP:', user)
+                user = BusinessUser.objects.filter(id=uid).first()
 
             except (TypeError, ValueError, OverflowError, BusinessUser.DoesNotExist):
 
                 user = None
 
-            print('➡ oneheartmarket/business/views.py:254 user:', user)
             if user is not None and custom_token_generator.check_token(user, token):
 
                 user.is_verified = True
@@ -371,6 +362,10 @@ class ForgotPasswordBusinessUser(GenericAPIView):
         uidb64 = data["uidb64"]
 
         new_password = data["new_password"]
+
+        if new_password is None or new_password == "":
+
+            return get_response_schema({}, get_global_error_messages('PASSWORD_REQUIRED'), status.HTTP_400_BAD_REQUEST)
 
         uid = urlsafe_base64_decode(uidb64).decode()
 

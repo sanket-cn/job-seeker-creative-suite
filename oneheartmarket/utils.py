@@ -68,7 +68,7 @@ def get_global_success_messages(key):
 def get_global_error_messages(key):
 
     data = {
-
+        
         'BAD_REQUEST': 'Bad request.',
         'NOT_FOUND': 'User not found.',
         'INVALID_TOKEN': 'Token is invalid or expired. Please try again.',
@@ -77,7 +77,9 @@ def get_global_error_messages(key):
         'UNAUTHORIZED': 'Invalid credentials.',
         'UNVERIFIED_ACCOUNT': 'Account is un-verified.',
         'INVALID_LINK': 'Invalid verification link.',
-        'FAIL_VERIFICATION_MAIL': 'Failed to send email. Please try again later.'
+        'FAIL_VERIFICATION_MAIL': 'Failed to send email. Please try again later.',
+        'PASSWORD_REQUIRED': 'Password can not be empty',
+        
     }
     return data.get(key)
 
